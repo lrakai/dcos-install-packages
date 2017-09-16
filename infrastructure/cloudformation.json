@@ -669,6 +669,9 @@
         "NATInstance": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
+				"IamInstanceProfile" : {
+					"Ref": "NatInstanceProfile"
+				},
                 "NetworkInterfaces": [
                     {
                         "DeleteOnTermination": "true",
@@ -842,7 +845,6 @@
             }
         },
         "ExhibitorS3Bucket": {
-            "DeletionPolicy": "Retain",
             "Type": "AWS::S3::Bucket"
         },
         "PublicRoute": {
@@ -2584,6 +2586,86 @@
                 }
             }
         },
+        "NatRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "Policies": [
+                    {
+                        "PolicyName": "NAT",
+                        "PolicyDocument": {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:GetBucketLocation",
+                                        "s3:ListAllMyBuckets"
+                                    ],
+                                    "Resource": "arn:aws:s3:::*"
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:ListBucket"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    "arn:aws:s3:::",
+                                                    {
+                                                        "Ref": "ExhibitorS3Bucket"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "Effect": "Allow",
+                                    "Action": [
+                                        "s3:PutObject",
+                                        "s3:GetObject",
+                                        "s3:DeleteObject"
+                                    ],
+                                    "Resource": [
+                                        {
+                                            "Fn::Join": [
+                                                "",
+                                                [
+                                                    "arn:aws:s3:::",
+                                                    {
+                                                        "Ref": "ExhibitorS3Bucket"
+                                                    },
+                                                    "/*"
+                                                ]
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": [
+                                    "ec2.amazonaws.com"
+                                ]
+                            },
+                            "Action": [
+                                "sts:AssumeRole"
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
         "SlaveRole": {
             "Type": "AWS::IAM::Role",
             "Properties": {
@@ -2671,6 +2753,17 @@
                 },
                 "IpProtocol": "-1",
                 "ToPort": "65535"
+            }
+        },
+        "NatInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Roles": [
+                    {
+                        "Ref": "NatRole"
+                    }
+                ],
+                "Path": "/"
             }
         },
         "SlaveInstanceProfile": {
@@ -2899,7 +2992,7 @@
                 "ToPort": "65535"
             }
         },
-		"Group": {
+        "Group": {
             "Type": "AWS::IAM::Group",
             "Properties": {
                 "GroupName": "Students",
