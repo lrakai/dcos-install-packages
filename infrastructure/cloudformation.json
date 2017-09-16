@@ -669,9 +669,9 @@
         "NATInstance": {
             "Type": "AWS::EC2::Instance",
             "Properties": {
-				"IamInstanceProfile" : {
-					"Ref": "NatInstanceProfile"
-				},
+                "IamInstanceProfile": {
+                    "Ref": "NatInstanceProfile"
+                },
                 "NetworkInterfaces": [
                     {
                         "DeleteOnTermination": "true",
@@ -846,6 +846,37 @@
         },
         "ExhibitorS3Bucket": {
             "Type": "AWS::S3::Bucket"
+        },
+        "ExhibitorS3BucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+                "Bucket": {
+                    "Ref": "ExhibitorS3Bucket"
+                },
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetObject"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        "arn:aws:s3:::",
+                                        {
+                                            "Ref": "ExhibitorS3Bucket"
+                                        },
+                                        "/*"
+                                    ]
+                                ]
+                            },
+                            "Principal": "*"
+                        }
+                    ]
+                }
+            }
         },
         "PublicRoute": {
             "Type": "AWS::EC2::Route",
